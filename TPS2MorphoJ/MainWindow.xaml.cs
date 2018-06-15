@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Linq;
+using MoreLinq;
 using System.Text.RegularExpressions;
 
 namespace TPS2MorphoJ
@@ -15,8 +16,14 @@ namespace TPS2MorphoJ
     {
         private TPSComplex parsed = new TPSComplex
         {
-            scale = 0,
+            scale = "",
             images = new List<TPSImage>()
+        };
+
+        private MorphoJFormat output = new MorphoJFormat
+        {
+            scale = "",
+            items = new List<MorphoJItem>()
         };
 
         public MainWindow()
@@ -51,11 +58,18 @@ namespace TPS2MorphoJ
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            ParseTextToTPSComplex();
+            ParseTPS2MorphoJ();
+            ConvertedTPS.Text = MorphoJToString();
+        }
+
+        private void ParseTextToTPSComplex()
+        {
             var allLines = OriginalTPS.Text.Split('\n');
             var scale = allLines.FirstOrDefault(l => l.StartsWith("SCALE"));
             if (scale != null)
             {
-                parsed.scale = double.Parse(scale.Split('=')[1].Replace(',', '.'));
+                parsed.scale = scale.Split('=')[1];
             }
             var noScales = string.Join("\n", allLines.Where(l => !l.StartsWith("SCALE")));
             String pattern = @"(?=LM=\d*)";
@@ -70,7 +84,7 @@ namespace TPS2MorphoJ
                         lms = new List<LM>(),
                         curvesCount = 0,
                         curves = new List<PointSet>(),
-                        ImageName = "",
+                        imageName = "",
                         ID = 0
                     };
                     var imageLines = image.Split(new string[] { "\r\n" }, StringSplitOptions.None);
@@ -118,7 +132,7 @@ namespace TPS2MorphoJ
                             }
                             else if (line.StartsWith("IMAGE"))
                             {
-                                imageItem.ImageName = line.Split('=')[1];
+                                imageItem.imageName = line.Split('=')[1];
                             }
                             else if (line.StartsWith("ID"))
                             {
@@ -129,10 +143,144 @@ namespace TPS2MorphoJ
                     parsed.images.Add(imageItem);
                 }
             });
-            Console.Write(noScales);
+        }
+
+        private void ParseTPS2MorphoJ()
+        {
+            var idCounter = 0;
+            output.scale = parsed.scale;
+            parsed.images.ForEach(image =>
+            {
+                var lmArray = image.lms.OrderBy(lm => lm.index).ToArray();
+                var curvesArray = image.curves.OrderBy(curve => curve.index).ToArray();
+
+                string firstLM;
+                string secondLM;
+                var indexCounter = 0;
+                var curveIndex = 0;
+                for (var i = 0; i < image.lmCount; i = i + 2)
+                {
+                    // TODO: Check in the case where lmCount > curveCount
+                    firstLM = lmArray[i].content;
+                    secondLM = lmArray[i + 1].content;
+                    while (curvesArray[curveIndex] == null || (curvesArray[curveIndex].pointsCount < image.curvesCount / 2))
+                    {
+                        curveIndex++;
+                    }
+                    var firstCurveIndex = curveIndex;
+                    curveIndex++;
+
+                    while (curvesArray[curveIndex] == null || (curvesArray[curveIndex].pointsCount < image.curvesCount / 2))
+                    {
+                        curveIndex++;
+                    }
+                    var secondCurveIndex = curveIndex;
+                    curveIndex++;
+
+                    var firstPoints = curvesArray[firstCurveIndex].pointItems.OrderBy(point => point.index).ToList();
+                    firstPoints.Remove(firstPoints.First());
+                    firstPoints.Remove(firstPoints.Last());
+                    var secondPoints = curvesArray[secondCurveIndex].pointItems.OrderBy(point => point.index).ToList();
+                    secondPoints.Remove(secondPoints.First());
+                    secondPoints.Remove(secondPoints.Last());
+
+                    var lmIndex = 0;
+
+                    var lms = new List<LM>();
+                    lms.Add(new LM
+                    {
+                        index = lmIndex,
+                        content = firstLM
+                    });
+                    var firstLmPoints = firstPoints.Select(point =>
+                    {
+                        lmIndex++;
+                        return new LM
+                        {
+                            index = lmIndex,
+                            content = point.content
+                        };
+                    }).ToList();
+                    lms.AddRange(firstLmPoints);
+
+                    lmIndex++;
+                    lms.Add(new LM
+                    {
+                        index = lmIndex,
+                        content = secondLM
+                    });
+                    var secondLmPoints = secondPoints.Select(point =>
+                    {
+                        lmIndex++;
+                        return new LM
+                        {
+                            index = lmIndex,
+                            content = point.content
+                        };
+                    }).ToList();
+                    lms.AddRange(secondLmPoints);
+
+                    var item = new MorphoJItem
+                    {
+                        lmCount = lms.Count,
+                        lms = lms.ToList(),
+                        imageName = image.imageName,
+                        imageIndex = indexCounter,
+                        ID = idCounter
+                    };
+                    indexCounter++;
+                    idCounter++;
+
+                    output.items.Add(item);
+                }
+            });
+        }
+
+        private string MorphoJToString()
+        {
+            var lineBreak = "\r\n";
+            var finalString = "";
+            output.items.OrderBy(i => i.ID).ForEach(i => {
+                finalString += "LM=" + i.lmCount + lineBreak;
+                i.lms.OrderBy(lm => lm.index).ForEach(lm => {
+                    finalString += lm.content + lineBreak;
+                });
+                var image = i.imageName.Split('.');
+                finalString += "IMAGE=" + image[0] + "_FL" + i.imageIndex + "." + image[1] + lineBreak;
+                finalString += "@ID=" + i.ID + lineBreak;
+            });
+            finalString += "SCALE=" + output.scale + lineBreak;
+            return finalString;
         }
     }
 
+    /// MorphoJ text format
+    /// LM=x1
+    /// ...
+    /// IMAGE=str1
+    /// @ID=y1
+    /// LM=x2
+    /// ...
+    /// IMAGE=str2
+    /// @ID=y2
+    /// SCALE=z
+
+    public class MorphoJFormat
+    {
+        public List<MorphoJItem> items;
+        public string scale;
+    }
+
+    public class MorphoJItem
+    {
+        public int lmCount;
+        public List<LM> lms;
+        public string imageName;
+        public int imageIndex;
+        public int ID;
+    }
+
+    /// TPS text format
     /// LM=x1
     /// ...
     /// IMAGE=str1
@@ -146,7 +294,7 @@ namespace TPS2MorphoJ
     public class TPSComplex
     {
         public List<TPSImage> images;
-        public double scale;
+        public string scale;
     }
 
     public class TPSImage
@@ -155,15 +303,7 @@ namespace TPS2MorphoJ
         public List<LM> lms;
         public int curvesCount;
         public List<PointSet> curves;
-        public string ImageName;
-        public int ID;
-    }
-
-    public class TPSSimple
-    {
-        public int lmCount;
-        public List<LM> leafs;
-        public string ImageName;
+        public string imageName;
         public int ID;
     }
 
