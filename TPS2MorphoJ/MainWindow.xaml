@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TPS2MorphoJ"
         xmlns:dragablz="http://dragablz.net/winfx/xaml/dragablz"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="TPS2MorphoJ" Height="450" Width="800">
     <Grid>
         <dragablz:TabablzControl Grid.Row="1">
             <dragablz:TabablzControl.InterTabController>
