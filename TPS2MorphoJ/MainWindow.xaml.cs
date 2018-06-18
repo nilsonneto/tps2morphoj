@@ -26,6 +26,8 @@ namespace TPS2MorphoJ
             items = new List<MorphoJItem>()
         };
 
+        private string ConvertedText = "";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -56,11 +58,29 @@ namespace TPS2MorphoJ
             Console.WriteLine(result); // <-- For debugging use.
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Converter_Click(object sender, RoutedEventArgs e)
         {
             ParseTextToTPSComplex();
             ParseTPS2MorphoJ();
-            ConvertedTPS.Text = MorphoJToString();
+            ConvertedText = MorphoJToString();
+            ConvertedTPS.Text = ConvertedText;
+        }
+
+        private void SaveConversion_Click(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new SaveFileDialog();
+            saveDialog.Filter = "TPS files (*.tps)|*.tps|All files (*.*)|*.*";
+            saveDialog.FilterIndex = 0;
+            saveDialog.RestoreDirectory = true;
+            if (saveDialog.ShowDialog() == true)
+            {
+                if (saveDialog.FileName != "")
+                {
+                    // FileStream fs = (FileStream) saveDialog.OpenFile();
+                    File.AppendAllText(saveDialog.FileName, ConvertedText);
+                    //                    fs.Close();
+                }
+            }
         }
 
         private void ParseTextToTPSComplex()
@@ -163,16 +183,40 @@ namespace TPS2MorphoJ
                     // TODO: Check in the case where lmCount > curveCount
                     firstLM = lmArray[i].content;
                     secondLM = lmArray[i + 1].content;
+                    if (curveIndex >= curvesArray.Length)
+                    {
+                        break;
+                    }
                     while (curvesArray[curveIndex] == null || (curvesArray[curveIndex].pointsCount < image.curvesCount / 2))
                     {
                         curveIndex++;
+                        if (curveIndex >= curvesArray.Length)
+                        {
+                            break;
+                        }
+                    }
+                    if (curveIndex >= curvesArray.Length)
+                    {
+                        break;
                     }
                     var firstCurveIndex = curveIndex;
                     curveIndex++;
 
+                    if (curveIndex >= curvesArray.Length)
+                    {
+                        break;
+                    }
                     while (curvesArray[curveIndex] == null || (curvesArray[curveIndex].pointsCount < image.curvesCount / 2))
                     {
                         curveIndex++;
+                        if (curveIndex >= curvesArray.Length)
+                        {
+                            break;
+                        }
+                    }
+                    if (curveIndex >= curvesArray.Length)
+                    {
+                        break;
                     }
                     var secondCurveIndex = curveIndex;
                     curveIndex++;
@@ -238,7 +282,7 @@ namespace TPS2MorphoJ
 
         private string MorphoJToString()
         {
-            var lineBreak = "\r\n";
+            var lineBreak = Environment.NewLine;
             var finalString = "";
             output.items.OrderBy(i => i.ID).ForEach(i => {
                 finalString += "LM=" + i.lmCount + lineBreak;

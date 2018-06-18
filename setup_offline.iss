@@ -18,7 +18,7 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename={#MyAppName}_Setup_v{#MyAppVersion}
+OutputBaseFilename={#MyAppName}_Setup_v{#MyAppVersion}_Offline
 OutputDir={#SourcePath}
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -32,7 +32,7 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-;Source: "{#DotNetInstallerName}"; DestDir: "{tmp}"; Check: FrameworkIsNotInstalled; Flags: deleteafterinstall; AfterInstall: InstallFramework
+Source: "{#DotNetInstallerName}"; DestDir: "{tmp}"; Check: FrameworkIsNotInstalled; Flags: deleteafterinstall; AfterInstall: InstallFramework
 Source: "TPS2MorphoJ\bin\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
@@ -208,13 +208,6 @@ begin
     WizardForm.LicenseAcceptedRadio.Checked := True;
   end;
 
-  if FrameworkIsNotInstalled() then
-  begin
-    idpAddFile('http://go.microsoft.com/fwlink/?LinkId=328855',
-    ExpandConstant('{tmp}\{#DotNetInstallerName}'));
-    idpDownloadAfter(wpReady);
-  end;
-
   ExpandConstant('{#SourcePath}');
 end;
 
@@ -258,10 +251,6 @@ begin
         end;
         if FrameworkIsNotInstalled() then
         begin
-          if not InstallFramework452(true) then
-          begin
-            Abort;
-          end;
           ShouldRestart := True;
         end;
         KillAppExe();

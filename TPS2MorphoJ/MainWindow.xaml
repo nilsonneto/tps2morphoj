@@ -29,8 +29,19 @@
                         <Button Margin="4" Name="FindPath" Content="Procurar" Width="80" Click="FindPath_Click"/>
                     </StackPanel>
                     <TextBox Grid.Column="0" Grid.Row="1" IsEnabled="False" Name="OriginalTPS" TextWrapping="Wrap" AcceptsReturn="True"/>
-                    <Button Grid.Column="1" Grid.Row="1" Content=">>" Height="24" Width="30"
-                            HorizontalAlignment="Center" VerticalAlignment="Center" Click="Button_Click"/>
+                    <StackPanel Grid.Column="1" Grid.Row="1"
+                                Orientation="Vertical"
+                                VerticalAlignment="Center">
+                        <Button Content=">>" Height="24" Width="30" 
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center" 
+                                Click="Converter_Click"/>
+                        <Button Content="Save" Height="24" Width="30" 
+                                Margin="0 8 0 0"
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center"
+                                Click="SaveConversion_Click"/>
+                    </StackPanel>
                     <TextBox Grid.Column="2" Grid.Row="1" Name="ConvertedTPS" TextWrapping="Wrap" AcceptsReturn="True"/>
                 </Grid>
             </TabItem>
