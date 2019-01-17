@@ -1,7 +1,7 @@
 #include <idp.iss>
 
 #define MyAppName "TPS2MorphoJ"
-#define MyAppVersion "0.2"
+#define MyAppVersion "0.4"
 #define MyAppPublisher "nilsonneto"
 #define MyAppURL "https://github.com/nilsonneto/tps2morphoj"
 #define MyAppExeName "TPS2MorphoJ.exe"

@@ -46,7 +46,11 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Configure">
+                <Grid>
+                    <StackPanel>
 
+                    </StackPanel>
+                </Grid>
             </TabItem>
         </dragablz:TabablzControl>
     </Grid>
